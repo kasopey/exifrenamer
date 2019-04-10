@@ -9,47 +9,81 @@ import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter;
 import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
 import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
+import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputDirectory;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet;
+import pl.samodzielo.exifrenamer.exception.TagNotFoundException;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.text.ParseException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
-public class Exif {
+public class ExifUtil {
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    public ZonedDateTime getTagValue(final JpegImageMetadata jpegMetadata, final TagInfo tagInfo) throws TagNotFoundException, ParseException {
+
+    public Optional<ZonedDateTime> getDateTimeFromExif(final File image) throws TagNotFoundException, IOException, ImageReadException {
+        final IImageMetadata metadata = Imaging.getMetadata(image);
+        String oldName = image.getName();
+        if (metadata != null) {
+            System.out.println("Processing: " + oldName);
+            final JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
+            ZonedDateTime date = getDateTimeFromExif(jpegMetadata);
+            return Optional.ofNullable(date);
+        }
+        return Optional.empty();
+    }
+
+    private ZonedDateTime getDateTimeFromExif(final JpegImageMetadata jpegMetadata) throws TagNotFoundException {
+        final TagInfo tagInfo = TiffTagConstants.TIFF_TAG_DATE_TIME;
         final TiffField field = jpegMetadata.findEXIFValueWithExactMatch(tagInfo);
         if (field == null) {
             throw new TagNotFoundException(String.format("Tag %d with name %s not found", tagInfo.tag, tagInfo.name));
         } else {
             String value = field.getValueDescription();
             ZonedDateTime date = ZonedDateTime.parse(value,
-                    DateTimeFormatter.ofPattern("''yyyy:MM:dd HH:mm:ss''").withZone(ZoneId.systemDefault()));
+                    DateTimeFormatter.ofPattern("''yyyy:MM:dd HH:mm:ss''")
+                            .withZone(ZoneId.systemDefault()));
             return date;
         }
     }
 
-    public void setDateTimeInExif(final File jpegImageFile, final File dst) throws IOException, ImageReadException, ImageWriteException {
-        try (OutputStream fos = new FileOutputStream(dst)) {
+    public String setDateTimeInExif(final File jpegImageFile, final ZonedDateTime dateTimeToSet) throws IOException, ImageReadException, ImageWriteException {
+        File temporary = File.createTempFile("exifrenamer", ".jpg");
+        String newFileName = setDateTimeInExif(jpegImageFile, temporary, dateTimeToSet);
+
+        Path changedImage = temporary.toPath();
+        Path originalPath = jpegImageFile.toPath();
+        Files.copy(changedImage, originalPath, StandardCopyOption.REPLACE_EXISTING);
+        temporary.deleteOnExit();
+        return newFileName;
+    }
+
+    private String setDateTimeInExif(final File sourceImage, final File destinationImage, final ZonedDateTime dateTimeToSet) throws IOException, ImageReadException, ImageWriteException {
+        // code from https://github.com/mjremijan/thoth-jpg/blob/master/src/main/java/org/thoth/imaging/WriteExifMetadataExample.java
+        // @author Michael Remijan mjremijan@yahoo.com @mjremijan
+        try (OutputStream fos = new FileOutputStream(destinationImage)) {
             TiffOutputSet outputSet = null;
 
             // note that metadata might be null if no metadata is found.
-            final IImageMetadata metadata = Imaging.getMetadata(jpegImageFile);
+            final IImageMetadata metadata = Imaging.getMetadata(sourceImage);
             final JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
             if (null != jpegMetadata) {
-                // note that exif might be null if no Exif metadata is found.
+                // note that exif might be null if no ExifUtil metadata is found.
                 final TiffImageMetadata exif = jpegMetadata.getExif();
 
                 if (null != exif) {
                     // TiffImageMetadata class is immutable (read-only).
-                    // TiffOutputSet class represents the Exif data to write.
+                    // TiffOutputSet class represents the ExifUtil data to write.
                     //
-                    // Usually, we want to update existing Exif metadata by changing
+                    // Usually, we want to update existing ExifUtil metadata by changing
                     // the values of a few fields, or adding a field.
                     // In these cases, it is easiest to use getOutputSet() to
                     // start with a "copy" of the fields read from the image.
@@ -68,7 +102,7 @@ public class Exif {
             // Note that you should first remove the field/tag if it already
             // exists in this directory, or you may end up with duplicate tags. See above.
             //
-            // Certain fields/tags are expected in certain Exif directories;
+            // Certain fields/tags are expected in certain ExifUtil directories;
             // Others can occur in more than one directory (and often have a
             // different meaning in different directories).
             //
@@ -80,12 +114,16 @@ public class Exif {
             final TiffOutputDirectory exifDirectory = outputSet.getOrCreateRootDirectory();
 
             exifDirectory.removeField(TiffConstants.TIFF_TAG_DATE_TIME);
-            exifDirectory.add(TiffConstants.TIFF_TAG_DATE_TIME,  "2021:01:01 01:02:03" );
 
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss");
+            String formattedString = dateTimeToSet.format(formatter);
+
+            exifDirectory.add(TiffConstants.TIFF_TAG_DATE_TIME, formattedString);
 
             BufferedOutputStream bos = new BufferedOutputStream(fos);
 
-            new ExifRewriter().updateExifMetadataLossless(jpegImageFile, bos, outputSet);
+            new ExifRewriter().updateExifMetadataLossless(sourceImage, bos, outputSet);
+            return formattedString;
         }
     }
 

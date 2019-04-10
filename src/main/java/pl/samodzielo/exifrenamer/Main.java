@@ -2,50 +2,43 @@ package pl.samodzielo.exifrenamer;
 
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.ImageWriteException;
-import org.apache.commons.imaging.Imaging;
-import org.apache.commons.imaging.common.IImageMetadata;
-import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata;
-import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
-import pl.samodzielo.exifrenamer.exif.Exif;
-import pl.samodzielo.exifrenamer.exif.TagNotFoundException;
+import pl.samodzielo.exifrenamer.exception.TagNotFoundException;
+import pl.samodzielo.exifrenamer.exif.ExifUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 
 public class Main {
 
-    public static final String DATE_PATTERN = "YYYY.MM.dd_HH-mm-ss";
-
-    public static void main(String... arg) throws ImageWriteException, ImageReadException, IOException, TagNotFoundException, ParseException {
-        Exif exif = new Exif();
-        SimpleDateFormat sdf = new SimpleDateFormat(DATE_PATTERN);
-        Path workingDirectory = Paths.get("./all");
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(workingDirectory)) {
-            for (Path entry : stream) {
-                if (Files.isRegularFile(entry)) {
-                    File image = entry.toFile();
-                    final IImageMetadata metadata = Imaging.getMetadata(image);
-                    String oldName = image.getName();
-                    if (metadata != null) {
-                        System.out.println("Processing: " + oldName);
-                        final JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
-                        ZonedDateTime date = exif.getTagValue(jpegMetadata, TiffTagConstants.TIFF_TAG_DATE_TIME);
-                        String newName = DateTimeFormatter.ofPattern(DATE_PATTERN).format(date) + ".jpg";
-                        Files.move(entry, entry.resolveSibling(newName), REPLACE_EXISTING);
-                        System.out.println(String.format("File =(%s) renamed to =(%s)", oldName, newName));
-                    } else {
-                        exif.setDateTimeInExif(image, new File("./xxx.jpg"));
+    public static void main(String... args) throws ImageWriteException, ImageReadException, IOException, TagNotFoundException, ParseException {
+        ArgumentParser config = new ArgumentParser(args);
+        ExifUtil exifUtil = new ExifUtil();
+        if (config.isEditExifMode()) {
+            exifUtil.setDateTimeInExif(config.getFileToEdit(), config.getDateTimeToSet());
+            // dodac rename pliku
+        } else {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(config.getWorkingDirectory())) {
+                for (Path entry : stream) {
+                    if (Files.isRegularFile(entry)) {
+                        File sourceImage = entry.toFile();
+                        Optional<ZonedDateTime> datetime = exifUtil.getDateTimeFromExif(sourceImage);
+                        if (datetime.isPresent()) {
+                            String oldName = sourceImage.getName();
+                            System.out.println("Processing: " + oldName);
+                            String newName = DateTimeFormatter.ofPattern(ArgumentParser.DATE_TIME_TO_SET_FORMAT).format(datetime.get()) + ".jpg";
+                            Files.move(entry, entry.resolveSibling(newName), REPLACE_EXISTING);
+                            System.out.println(String.format("File =(%s) renamed to =(%s)", oldName, newName));
+                        }
                     }
                 }
             }

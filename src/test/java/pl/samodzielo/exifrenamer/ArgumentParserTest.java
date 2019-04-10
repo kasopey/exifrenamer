@@ -28,21 +28,21 @@ class ArgumentParserTest {
     }
 
     @Test
-    public void should_set_default_mode_and_directory_from_params() {
+    void should_set_default_mode_and_directory_from_params() {
         ArgumentParser parser = new ArgumentParser(new String[]{"-d", WORK_DIR_CUSTOM});
         Assertions.assertFalse(parser.isEditExifMode());
         Assertions.assertEquals(Paths.get(WORK_DIR_CUSTOM), parser.getWorkingDirectory());
     }
 
     @Test
-    public void should_set_default_mode_and_default_current_directory() {
+    void should_set_default_mode_and_default_current_directory() {
         ArgumentParser parser = new ArgumentParser(new String[]{});
         Assertions.assertFalse(parser.isEditExifMode());
         Assertions.assertEquals(Paths.get(System.getProperty("user.dir")), parser.getWorkingDirectory());
     }
 
     @Test
-    public void should_set_editExifMode_and_file_and_date_from_params_in_default_current_directory() {
+    void should_set_editExifMode_and_file_and_date_from_params_in_default_current_directory() {
         ArgumentParser parser = new ArgumentParser(new String[]{"-w", "-f", FILE, "-t", DATE_TIME_TO_SET_STRING});
         Assertions.assertTrue(parser.isEditExifMode());
         Assertions.assertEquals(Paths.get(WORK_DIR), parser.getWorkingDirectory());
@@ -51,7 +51,7 @@ class ArgumentParserTest {
     }
 
     @Test
-    public void should_set_editExifMode_and_file_and_date_from_params_and_directory() {
+    void should_set_editExifMode_and_file_and_date_from_params_and_directory() {
         ArgumentParser parser = new ArgumentParser(new String[]{"-w", "-f", FILE, "-t", DATE_TIME_TO_SET_STRING, "-d", WORK_DIR_CUSTOM});
         Assertions.assertTrue(parser.isEditExifMode());
         Assertions.assertEquals(Paths.get(WORK_DIR_CUSTOM), parser.getWorkingDirectory());
@@ -60,7 +60,7 @@ class ArgumentParserTest {
     }
 
     @Test
-    public void should_throw_exception_because_of_missing_arguments() {
+    void should_throw_exception_because_of_missing_arguments() {
         Assertions.assertThrows(ExifRenamerArgumentException.class, () -> {
             ArgumentParser parser = new ArgumentParser(new String[]{"-w", "-f", FILE});
         });

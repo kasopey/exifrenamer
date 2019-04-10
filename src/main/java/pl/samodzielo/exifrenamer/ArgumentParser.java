@@ -41,7 +41,7 @@ public class ArgumentParser {
                 continue;
             }
 
-            if (Arrays.stream(args).anyMatch("-w"::equals)) {
+            if (Arrays.asList(args).contains("-w")) {
                 editExifMode = true;
 
             }

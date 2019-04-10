@@ -1,4 +1,4 @@
-package pl.samodzielo.exifrenamer.exif;
+package pl.samodzielo.exifrenamer.exception;
 
 public class TagNotFoundException extends Exception {
 
