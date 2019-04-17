@@ -28,7 +28,6 @@ public class ArgumentParser {
     private File fileToEdit;
 
     public ArgumentParser(String[] args) {
-        LOGGER.info("Parsing arguments: {}", String.join(" ", args));
         parse(args);
         validate();
     }
@@ -36,7 +35,7 @@ public class ArgumentParser {
     private void parse(String[] args) {
         String fileToEditName = null;
         for (int i = 0; i < args.length; i++) {
-            if (args[i].equals("-d")) {
+            if ("-d".equals(args[i])) {
                 workingDirectory = Paths.get(args[i + 1]);
                 continue;
             }
@@ -45,13 +44,17 @@ public class ArgumentParser {
                 editExifMode = true;
 
             }
-            if (args[i].equals("-t")) {
+            if ("-t".equals(args[i])) {
                 LocalDateTime localDateTime = LocalDateTime.parse(args[i + 1], DateTimeFormatter.ofPattern(DATE_TIME_TO_SET_FORMAT));
                 dateTimeToSet = localDateTime.atZone(ZoneId.systemDefault());
             }
 
-            if (args[i].equals("-f")) {
+            if ("-f".equals(args[i])) {
                 fileToEditName = args[i + 1];
+            }
+
+            if ("-h".equals(args[i]) || "--help".equals(args[i])) {
+                printHelp();
             }
 
         }
@@ -70,7 +73,18 @@ public class ArgumentParser {
                 throw new ExifRenamerArgumentException("Missing or invalid file to set argument");
             }
         }
+    }
 
+    private void printHelp() {
+        final String NL = System.lineSeparator();
+        StringBuilder sb = new StringBuilder("Program arguments:");
+        sb.append(NL);
+        sb.append("-h, --help - prints this help").append(NL);
+        sb.append("-d - sets working directory (default: .)").append(NL);
+        sb.append("-w - switches application to edit EXIF data mode:").append(NL);
+        sb.append("    -t - dateTime to set in format ").append(DATE_TIME_TO_SET_FORMAT).append(NL);
+        sb.append("    -f - file to edit EXIF DATA").append(NL);
+        LOGGER.info(sb.toString());
     }
 
     public boolean isEditExifMode() {

@@ -9,18 +9,19 @@ import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter;
 import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
 import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
-import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
+import org.apache.commons.imaging.formats.tiff.constants.TiffDirectoryType;
 import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
+import org.apache.commons.imaging.formats.tiff.taginfos.TagInfoAscii;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputDirectory;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.samodzielo.exifrenamer.exception.TagNotFoundException;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.text.ParseException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,31 +29,18 @@ import java.util.Optional;
 
 public class ExifUtil {
 
+    private static Logger LOGGER = LoggerFactory.getLogger(ExifUtil.class);
 
     public Optional<ZonedDateTime> getDateTimeFromExif(final File image) throws TagNotFoundException, IOException, ImageReadException {
         final IImageMetadata metadata = Imaging.getMetadata(image);
         String oldName = image.getName();
         if (metadata != null) {
-            System.out.println("Processing: " + oldName);
+            LOGGER.info("Processing: " + oldName);
             final JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
             ZonedDateTime date = getDateTimeFromExif(jpegMetadata);
             return Optional.ofNullable(date);
         }
         return Optional.empty();
-    }
-
-    private ZonedDateTime getDateTimeFromExif(final JpegImageMetadata jpegMetadata) throws TagNotFoundException {
-        final TagInfo tagInfo = TiffTagConstants.TIFF_TAG_DATE_TIME;
-        final TiffField field = jpegMetadata.findEXIFValueWithExactMatch(tagInfo);
-        if (field == null) {
-            throw new TagNotFoundException(String.format("Tag %d with name %s not found", tagInfo.tag, tagInfo.name));
-        } else {
-            String value = field.getValueDescription();
-            ZonedDateTime date = ZonedDateTime.parse(value,
-                    DateTimeFormatter.ofPattern("''yyyy:MM:dd HH:mm:ss''")
-                            .withZone(ZoneId.systemDefault()));
-            return date;
-        }
     }
 
     public String setDateTimeInExif(final File jpegImageFile, final ZonedDateTime dateTimeToSet) throws IOException, ImageReadException, ImageWriteException {
@@ -64,6 +52,21 @@ public class ExifUtil {
         Files.copy(changedImage, originalPath, StandardCopyOption.REPLACE_EXISTING);
         temporary.deleteOnExit();
         return newFileName;
+    }
+
+    private ZonedDateTime getDateTimeFromExif(final JpegImageMetadata jpegMetadata) throws TagNotFoundException {
+        final TagInfo tagInfo = new TagInfoAscii("DateTimeOriginal", 36867, 20, TiffDirectoryType.EXIF_DIRECTORY_EXIF_IFD);
+
+        final TiffField field = jpegMetadata.findEXIFValueWithExactMatch(tagInfo);
+        if (field == null) {
+            throw new TagNotFoundException(String.format("Tag %d with name %s not found", tagInfo.tag, tagInfo.name));
+        } else {
+            String value = field.getValueDescription();
+            ZonedDateTime date = ZonedDateTime.parse(value,
+                    DateTimeFormatter.ofPattern("''yyyy:MM:dd HH:mm:ss''")
+                            .withZone(ZoneId.systemDefault()));
+            return date;
+        }
     }
 
     private String setDateTimeInExif(final File sourceImage, final File destinationImage, final ZonedDateTime dateTimeToSet) throws IOException, ImageReadException, ImageWriteException {

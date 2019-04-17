@@ -2,6 +2,7 @@ package pl.samodzielo.exifrenamer.exif;
 
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.ImageWriteException;
+import org.apache.commons.imaging.formats.tiff.constants.TiffDirectoryType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,6 @@ class ExifUtilTest {
         Optional<ZonedDateTime> dateTime = new ExifUtil().getDateTimeFromExif(new File(WORK_DIR + SEP + FILE));
         Assertions.assertTrue(dateTime.isPresent());
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, dateTime.get());
-
     }
 
     @Test
