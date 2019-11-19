@@ -2,11 +2,11 @@ package pl.samodzielo.exifrenamer.exif;
 
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.ImageWriteException;
-import org.apache.commons.imaging.formats.tiff.constants.TiffDirectoryType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.samodzielo.exifrenamer.ArgumentParser;
+import pl.samodzielo.exifrenamer.Fixtures;
 import pl.samodzielo.exifrenamer.exception.TagNotFoundException;
 
 import java.io.File;
@@ -19,13 +19,11 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
+import static pl.samodzielo.exifrenamer.Fixtures.*;
+import static pl.samodzielo.exifrenamer.Fixtures.WORK_DIR;
+
 class ExifUtilTest {
 
-    private static final String SEP = System.getProperty("file.separator");
-
-    private static final String WORK_DIR = System.getProperty("user.dir") + SEP + "src" + SEP + "test" + SEP + "resources" + SEP;
-
-    private static final String FILE = "file.jpg";
     private static final String FILE_WITHOUT_EXIF = "file-without-exif.jpg";
 
     private static final String DATE_TIME_TO_SET_STRING = "2018.07.19_10-06-40";
@@ -33,13 +31,13 @@ class ExifUtilTest {
     private static final ZonedDateTime DATE_TIME_TO_SET_DATE = LocalDateTime.parse(DATE_TIME_TO_SET_STRING, DateTimeFormatter.ofPattern(ArgumentParser.DATE_TIME_TO_SET_FORMAT)).atZone(ZoneId.systemDefault());
 
     @BeforeEach
-    void setUp() {
-        System.setProperty("user.dir", WORK_DIR);
+    void setup() {
+        Fixtures.setWorkingDir();
     }
 
     @Test
     void should_return_dateTime_from_exif() throws IOException, ImageReadException, TagNotFoundException {
-        Optional<ZonedDateTime> dateTime = new ExifUtil().getDateTimeFromExif(new File(WORK_DIR + SEP + FILE));
+        Optional<ZonedDateTime> dateTime = new ExifUtil().getDateTimeFromExif(new File(WORK_DIR + SEP + IMAGE_FILE));
         Assertions.assertTrue(dateTime.isPresent());
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, dateTime.get());
     }
