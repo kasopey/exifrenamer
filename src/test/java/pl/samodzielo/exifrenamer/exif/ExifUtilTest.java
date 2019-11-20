@@ -12,6 +12,7 @@ import pl.samodzielo.exifrenamer.exception.TagNotFoundException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -24,8 +25,6 @@ import static pl.samodzielo.exifrenamer.Fixtures.WORK_DIR;
 
 class ExifUtilTest {
 
-    private static final String FILE_WITHOUT_EXIF = "file-without-exif.jpg";
-
     private static final String DATE_TIME_TO_SET_STRING = "2018.07.19_10-06-40";
 
     private static final ZonedDateTime DATE_TIME_TO_SET_DATE = LocalDateTime.parse(DATE_TIME_TO_SET_STRING, DateTimeFormatter.ofPattern(ArgumentParser.DATE_TIME_TO_SET_FORMAT)).atZone(ZoneId.systemDefault());
@@ -37,14 +36,14 @@ class ExifUtilTest {
 
     @Test
     void should_return_dateTime_from_exif() throws IOException, ImageReadException, TagNotFoundException {
-        Optional<ZonedDateTime> dateTime = new ExifUtil().getDateTimeFromExif(new File(WORK_DIR + SEP + IMAGE_FILE));
+        Optional<ZonedDateTime> dateTime = new ExifUtil(Paths.get(WORK_DIR + SEP + IMAGE_FILE)).getDateTimeFromExif();
         Assertions.assertTrue(dateTime.isPresent());
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, dateTime.get());
     }
 
     @Test
     void should_return_empty_dateTime_because_exif_data_are_missing() throws IOException, ImageReadException, TagNotFoundException {
-        Optional<ZonedDateTime> dateTime = new ExifUtil().getDateTimeFromExif(new File(WORK_DIR + SEP + FILE_WITHOUT_EXIF));
+        Optional<ZonedDateTime> dateTime = new ExifUtil(Paths.get(WORK_DIR + SEP + FILE_WITHOUT_EXIF)).getDateTimeFromExif();
         Assertions.assertFalse(dateTime.isPresent());
     }
 
@@ -54,12 +53,13 @@ class ExifUtilTest {
         File image = new File(WORK_DIR + SEP + FILE_WITHOUT_EXIF);
 
         Files.copy(image.toPath(), temporary.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        Optional<ZonedDateTime> dateTime = new ExifUtil().getDateTimeFromExif(temporary);
+        ExifUtil exifUtil = new ExifUtil(temporary.toPath());
+        Optional<ZonedDateTime> dateTime = exifUtil.getDateTimeFromExif();
         Assertions.assertFalse(dateTime.isPresent());
 
 
-        new ExifUtil().setDateTimeInExif(temporary, DATE_TIME_TO_SET_DATE);
-        dateTime = new ExifUtil().getDateTimeFromExif(temporary);
+        exifUtil.setDateTimeInExif(DATE_TIME_TO_SET_DATE);
+        dateTime = exifUtil.getDateTimeFromExif();
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, dateTime.get());
 
         temporary.deleteOnExit();

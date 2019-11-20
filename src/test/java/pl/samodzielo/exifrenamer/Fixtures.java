@@ -10,6 +10,8 @@ public class Fixtures {
 
     public static final String NOT_IMAGE_FILE = "not-image-file.txt";
 
+    public static final String FILE_WITHOUT_EXIF = "file-without-exif.jpg";
+
     public static void setWorkingDir() {
         System.setProperty("user.dir", WORK_DIR);
     }

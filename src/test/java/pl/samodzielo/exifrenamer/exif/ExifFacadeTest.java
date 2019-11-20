@@ -4,7 +4,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.samodzielo.exifrenamer.Fixtures;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -28,16 +27,16 @@ class ExifFacadeTest {
     void should_return_optional_with_value_for_not_existent_file() {
         givenFile(IMAGE_FILE);
 
-        Optional<File> image = when.getImage(givenPath);
+        Optional<Path> image = when.isImage(givenPath);
 
-        assertThat(image.get().getName()).isEqualTo(IMAGE_FILE);
+        assertThat(image.get().getFileName().getFileName().toString()).isEqualTo(IMAGE_FILE);
     }
 
     @Test
     void should_return_empty_optional_for_not_existent_file() {
         givenFile("missing-file");
 
-        Optional<File> image = when.getImage(givenPath);
+        Optional<Path> image = when.isImage(givenPath);
 
         assertThat(image.isPresent()).isFalse();
     }
@@ -46,7 +45,7 @@ class ExifFacadeTest {
     void should_return_empty_optional_for_not_image_file() {
         givenFile(NOT_IMAGE_FILE);
 
-        Optional<File> image = when.getImage(givenPath);
+        Optional<Path> image = when.isImage(givenPath);
 
         assertThat(image.isPresent()).isFalse();
     }

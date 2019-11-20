@@ -25,7 +25,7 @@ public class ArgumentParser {
 
     private ZonedDateTime dateTimeToSet;
 
-    private File fileToEdit;
+    private Path fileToEdit;
 
     public ArgumentParser(String[] args) {
         parse(args);
@@ -61,7 +61,7 @@ public class ArgumentParser {
         if (workingDirectory == null) {
             workingDirectory = Paths.get(System.getProperty("user.dir"));
         }
-        fileToEdit = new File(workingDirectory + System.getProperty("file.separator") + fileToEditName);
+        fileToEdit = Paths.get(workingDirectory + System.getProperty("file.separator") + fileToEditName);
     }
 
     private void validate() {
@@ -69,7 +69,7 @@ public class ArgumentParser {
             if (dateTimeToSet == null) {
                 throw new ExifRenamerArgumentException("Missing or invalid datetime to set argument");
             }
-            if (fileToEdit == null || !fileToEdit.exists()) {
+            if (fileToEdit == null || !fileToEdit.toFile().exists()) {
                 throw new ExifRenamerArgumentException("Missing or invalid file to set argument");
             }
         }
@@ -99,7 +99,7 @@ public class ArgumentParser {
         return dateTimeToSet;
     }
 
-    public File getFileToEdit() {
+    public Path getFileToEdit() {
         return fileToEdit;
     }
 }
