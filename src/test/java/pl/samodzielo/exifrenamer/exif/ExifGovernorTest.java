@@ -23,7 +23,7 @@ import java.util.Optional;
 import static pl.samodzielo.exifrenamer.Fixtures.*;
 import static pl.samodzielo.exifrenamer.Fixtures.WORK_DIR;
 
-class ExifUtilTest {
+class ExifAccessorTest {
 
     private static final String DATE_TIME_TO_SET_STRING = "2018.07.19_10-06-40";
 
@@ -36,14 +36,14 @@ class ExifUtilTest {
 
     @Test
     void should_return_dateTime_from_exif() throws IOException, ImageReadException, TagNotFoundException {
-        Optional<ZonedDateTime> dateTime = new ExifUtil(Paths.get(WORK_DIR + SEP + IMAGE_FILE)).getDateTimeFromExif();
+        Optional<ZonedDateTime> dateTime = new ExifAccessor(Paths.get(WORK_DIR + SEP + IMAGE_FILE)).getDateTimeFromExif();
         Assertions.assertTrue(dateTime.isPresent());
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, dateTime.get());
     }
 
     @Test
     void should_return_empty_dateTime_because_exif_data_are_missing() throws IOException, ImageReadException, TagNotFoundException {
-        Optional<ZonedDateTime> dateTime = new ExifUtil(Paths.get(WORK_DIR + SEP + FILE_WITHOUT_EXIF)).getDateTimeFromExif();
+        Optional<ZonedDateTime> dateTime = new ExifAccessor(Paths.get(WORK_DIR + SEP + FILE_WITHOUT_EXIF)).getDateTimeFromExif();
         Assertions.assertFalse(dateTime.isPresent());
     }
 
@@ -53,13 +53,13 @@ class ExifUtilTest {
         File image = new File(WORK_DIR + SEP + FILE_WITHOUT_EXIF);
 
         Files.copy(image.toPath(), temporary.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        ExifUtil exifUtil = new ExifUtil(temporary.toPath());
-        Optional<ZonedDateTime> dateTime = exifUtil.getDateTimeFromExif();
+        ExifAccessor exifAccessor = new ExifAccessor(temporary.toPath());
+        Optional<ZonedDateTime> dateTime = exifAccessor.getDateTimeFromExif();
         Assertions.assertFalse(dateTime.isPresent());
 
 
-        exifUtil.setDateTimeInExif(DATE_TIME_TO_SET_DATE);
-        dateTime = exifUtil.getDateTimeFromExif();
+        exifAccessor.setDateTimeInExif(DATE_TIME_TO_SET_DATE);
+        dateTime = exifAccessor.getDateTimeFromExif();
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, dateTime.get());
 
         temporary.deleteOnExit();

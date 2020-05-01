@@ -9,7 +9,6 @@ import org.apache.commons.imaging.formats.jpeg.exif.ExifRewriter;
 import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
 import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
-import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
 import org.apache.commons.imaging.formats.tiff.taginfos.TagInfoAscii;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputDirectory;
 import org.apache.commons.imaging.formats.tiff.write.TiffOutputSet;
@@ -26,24 +25,28 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
-public class ExifUtil {
+public class ExifEditor {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(ExifUtil.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(ExifEditor.class);
 
     private final Path file;
     private static final TagInfoAscii TAG_DATE_TIME = TiffConstants.TIFF_TAG_DATE_TIME;
 
-    public ExifUtil(Path file) {
+    public ExifEditor(Path file) {
         this.file = file;
     }
 
-    public Optional<ZonedDateTime> getDateTimeFromExif() throws TagNotFoundException, IOException, ImageReadException {
-        final IImageMetadata metadata = Imaging.getMetadata(file.toFile());
-        if (metadata != null) {
-            LOGGER.info("Processing: " + file.toFile().getName());
-            final JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
-            ZonedDateTime date = getDateTimeFromExif(jpegMetadata);
-            return Optional.ofNullable(date);
+    public Optional<ZonedDateTime> getDateTimeFromExif() {
+        try {
+            final IImageMetadata metadata = Imaging.getMetadata(file.toFile());
+            if (metadata != null) {
+                LOGGER.info("Processing: " + file.toFile().getName());
+                final JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
+                ZonedDateTime date = getDateTimeFromExif(jpegMetadata);
+                return Optional.ofNullable(date);
+            }
+        } catch (ImageReadException | IOException | TagNotFoundException e) {
+            LOGGER.info(e.getMessage(), e);
         }
         return Optional.empty();
     }
