@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.samodzielo.exifrenamer.exception.TagNotFoundException;
 import pl.samodzielo.exifrenamer.exif.ExifFacade;
-import pl.samodzielo.exifrenamer.exif.ExifUtil;
+import pl.samodzielo.exifrenamer.exif.ExifGovernor;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -26,37 +26,36 @@ public class Main {
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
+    // TODO: jesli nazwa pliku jest ok, to go pomijaj
     public static void main(String... args) throws ImageWriteException, ImageReadException, IOException, TagNotFoundException, ParseException {
         ArgumentParser config = new ArgumentParser(args);
         ExifFacade facade = new ExifFacade();
         if (config.isEditExifMode()) {
-            ExifUtil exifUtil = new ExifUtil(config.getFileToEdit());
-            exifUtil.setDateTimeInExif(config.getDateTimeToSet());
-            // wprowadzic klase posredniczaca miedzy Main a ExifUtil i wsadzic do niej logike, ktora jest tutaj
+            ExifGovernor exifGovernor = new ExifGovernor(config.getFileToEdit());
+            exifGovernor.setDateTimeInExif(config.getDateTimeToSet());
             String newName = calculateNewName(config.getFileToEdit(), config.getDateTimeToSet());
             Files.move(config.getFileToEdit(), config.getFileToEdit().resolveSibling(newName), REPLACE_EXISTING);
         } else {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(config.getWorkingDirectory())) {
                 for (Path entry : stream) {
                     LOGGER.info("Processing entry: " + entry);
-                    Path newLocation  = facade.isImage(entry)
-                            .map(sourceImage -> {
-                                LOGGER.info("Processing file " + sourceImage);
-                                Optional<ZonedDateTime> datetime = null;
-                                try {
-                                    datetime = new ExifUtil(sourceImage).getDateTimeFromExif();
-                                } catch (Exception e) {
-                                    LOGGER.info(e.getMessage(), e);
-                                    return null;
-                                }
-                                if (datetime.isPresent()) {
-                                    String newName = calculateNewName(sourceImage, datetime.get());
-                                    return Paths.get(newName);
-                                }
-                                return null;
-                            }).orElse(null);
-                    Files.move(entry, entry.resolveSibling(newLocation), REPLACE_EXISTING);
-                    LOGGER.info("File =({}) renamed to =({})", entry, newLocation);
+                    facade.isImage(entry)
+                        .map(sourceImage -> {
+                            LOGGER.info("Processing file " + sourceImage);
+                            Optional<ZonedDateTime> datetime = new ExifGovernor(sourceImage).getDateTimeFromExif();
+                            if (datetime.isPresent()) {
+                                String newName = calculateNewName(sourceImage, datetime.get());
+                                return Paths.get(newName);
+                            }
+                            return null;
+                        }).ifPresent(path -> {
+                            try {
+                                Files.move(entry, entry.resolveSibling(path), REPLACE_EXISTING);
+                                LOGGER.info("File =({}) renamed to =({})", entry, path);
+                            } catch (IOException e) {
+                                LOGGER.info(e.getMessage(), e);
+                            }
+                        });
                 }
             }
         }
