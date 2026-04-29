@@ -116,4 +116,26 @@ class ExifAccessorTest {
         temporary.deleteOnExit();
     }
 
+    @Test
+    void should_overwrite_existing_tags_when_force_is_true() throws IOException {
+        File temporary = File.createTempFile("exifrenamer", ".jpg");
+        File image = new File(WORK_DIR + SEP + IMAGE_FILE);
+        Files.copy(image.toPath(), temporary.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        ExifGovernor exifAccessor = new ExifGovernor(temporary.toPath());
+        ZonedDateTime newDateTime = DATE_TIME_TO_SET_DATE.plusYears(1);
+
+        exifAccessor.setDateTimeInExif(newDateTime, true);
+
+        Optional<ZonedDateTime> dateTime = exifAccessor.getDateTimeFromExif();
+        Assertions.assertEquals(newDateTime, dateTime.get());
+
+        JpegImageMetadata metadata = (JpegImageMetadata) Imaging.getMetadata(temporary);
+        TiffField originalField = metadata.findExifValueWithExactMatch(ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL);
+        Assertions.assertNotNull(originalField);
+        Assertions.assertEquals("2019:07:19 10:06:40", originalField.getStringValue());
+
+        temporary.deleteOnExit();
+    }
+
 }

@@ -23,6 +23,8 @@ public class ArgumentParser {
 
     private boolean helpMode;
 
+    private boolean force;
+
     private Path workingDirectory;
 
     private ZonedDateTime dateTimeToSet;
@@ -60,6 +62,10 @@ public class ArgumentParser {
                 printHelp();
             }
 
+            if ("-F".equals(args[i]) || "--force".equals(args[i])) {
+                force = true;
+            }
+
         }
         if (workingDirectory == null) {
             workingDirectory = Paths.get("").toAbsolutePath();
@@ -87,6 +93,7 @@ public class ArgumentParser {
         sb.append("-w - switches application to edit EXIF data mode:").append(NL);
         sb.append("    -t - dateTime to set in format ").append(DATE_TIME_TO_SET_FORMAT).append(NL);
         sb.append("    -f - file to edit EXIF DATA").append(NL);
+        sb.append("    -F, --force - force overwrite of existing EXIF date tags").append(NL);
         LOGGER.info(sb.toString());
     }
 
@@ -96,6 +103,10 @@ public class ArgumentParser {
 
     public boolean isHelpMode() {
         return helpMode;
+    }
+
+    public boolean isForce() {
+        return force;
     }
 
     public Path getWorkingDirectory() {

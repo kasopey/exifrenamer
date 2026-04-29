@@ -53,21 +53,33 @@ public class ExifGovernor {
     }
 
     public String setDateTimeInExif(final ZonedDateTime dateTimeToSet) throws IOException {
-        setDateTime(dateTimeToSet);
-        return setDateTimeOriginal(dateTimeToSet);
+        return setDateTimeInExif(dateTimeToSet, false);
+    }
+
+    public String setDateTimeInExif(final ZonedDateTime dateTimeToSet, final boolean force) throws IOException {
+        setDateTime(dateTimeToSet, force);
+        return setDateTimeOriginal(dateTimeToSet, force);
     }
 
     public String setDateTime(final ZonedDateTime dateTimeToSet) throws IOException {
-        return writeSingleTag(TAG_DATE_TIME, false, dateTimeToSet);
+        return setDateTime(dateTimeToSet, false);
+    }
+
+    public String setDateTime(final ZonedDateTime dateTimeToSet, final boolean force) throws IOException {
+        return writeSingleTag(TAG_DATE_TIME, false, dateTimeToSet, force);
     }
 
     public String setDateTimeOriginal(final ZonedDateTime dateTimeToSet) throws IOException {
-        return writeSingleTag(TAG_DATE_TIME_ORIGINAL, true, dateTimeToSet);
+        return setDateTimeOriginal(dateTimeToSet, false);
     }
 
-    private String writeSingleTag(final TagInfoAscii tag, final boolean inExifSubDirectory, final ZonedDateTime dateTimeToSet) throws IOException {
+    public String setDateTimeOriginal(final ZonedDateTime dateTimeToSet, final boolean force) throws IOException {
+        return writeSingleTag(TAG_DATE_TIME_ORIGINAL, true, dateTimeToSet, force);
+    }
+
+    private String writeSingleTag(final TagInfoAscii tag, final boolean inExifSubDirectory, final ZonedDateTime dateTimeToSet, final boolean force) throws IOException {
         File temporary = File.createTempFile("exifrenamer", ".jpg");
-        String newFileName = writeSingleTag(file.toFile(), temporary, tag, inExifSubDirectory, dateTimeToSet);
+        String newFileName = writeSingleTag(file.toFile(), temporary, tag, inExifSubDirectory, dateTimeToSet, force);
 
         Path changedImage = temporary.toPath();
         Files.copy(changedImage, file, StandardCopyOption.REPLACE_EXISTING);
@@ -89,7 +101,7 @@ public class ExifGovernor {
         }
     }
 
-    private String writeSingleTag(final File sourceImage, final File destinationImage, final TagInfoAscii tag, final boolean inExifSubDirectory, final ZonedDateTime dateTimeToSet) throws IOException, ImagingException {
+    private String writeSingleTag(final File sourceImage, final File destinationImage, final TagInfoAscii tag, final boolean inExifSubDirectory, final ZonedDateTime dateTimeToSet, final boolean force) throws IOException, ImagingException {
         // code from https://github.com/mjremijan/thoth-jpg/blob/master/src/main/java/org/thoth/imaging/WriteExifMetadataExample.java
         // @author Michael Remijan mjremijan@yahoo.com @mjremijan
         try (OutputStream fos = new FileOutputStream(destinationImage)) {
@@ -99,7 +111,7 @@ public class ExifGovernor {
             final JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
             if (null != jpegMetadata) {
                 final TiffField existing = jpegMetadata.findExifValueWithExactMatch(tag);
-                if (existing != null) {
+                if (existing != null && !force) {
                     throw new ImagingException(String.format("Tag %s already set", tag.name));
                 }
                 final TiffImageMetadata exif = jpegMetadata.getExif();
@@ -119,6 +131,9 @@ public class ExifGovernor {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss");
             String formattedString = dateTimeToSet.format(formatter);
 
+            if (force) {
+                directory.removeField(tag);
+            }
             directory.add(tag, formattedString);
 
             BufferedOutputStream bos = new BufferedOutputStream(fos);

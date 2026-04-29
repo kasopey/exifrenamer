@@ -31,7 +31,7 @@ public class Main {
         ExifFacade facade = new ExifFacade();
         if (config.isEditExifMode()) {
             ExifGovernor exifGovernor = new ExifGovernor(config.getFileToEdit());
-            exifGovernor.setDateTimeInExif(config.getDateTimeToSet());
+            exifGovernor.setDateTimeInExif(config.getDateTimeToSet(), config.isForce());
             String newName = calculateNewName(config.getFileToEdit(), config.getDateTimeToSet());
             Files.move(config.getFileToEdit(), config.getFileToEdit().resolveSibling(newName), REPLACE_EXISTING);
         } else {
