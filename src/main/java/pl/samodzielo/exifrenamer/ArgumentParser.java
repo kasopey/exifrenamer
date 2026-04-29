@@ -70,7 +70,7 @@ public class ArgumentParser {
                 throw new ExifRenamerArgumentException("Missing or invalid datetime to set argument");
             }
             if (fileToEdit == null || !fileToEdit.toFile().exists()) {
-                throw new ExifRenamerArgumentException("Missing or invalid file to set argument");
+                throw new ExifRenamerArgumentException("Missing or invalid file to set argument:" + fileToEdit);
             }
         }
     }

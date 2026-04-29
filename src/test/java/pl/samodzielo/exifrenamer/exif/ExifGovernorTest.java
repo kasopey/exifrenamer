@@ -1,13 +1,19 @@
 package pl.samodzielo.exifrenamer.exif;
 
-import org.apache.commons.imaging.ImageReadException;
-import org.apache.commons.imaging.ImageWriteException;
+import static pl.samodzielo.exifrenamer.Fixtures.FILE_WITHOUT_EXIF;
+import static pl.samodzielo.exifrenamer.Fixtures.IMAGE_FILE;
+import static pl.samodzielo.exifrenamer.Fixtures.SEP;
+import static pl.samodzielo.exifrenamer.Fixtures.WORK_DIR;
+
+import org.apache.commons.imaging.Imaging;
+import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata;
+import org.apache.commons.imaging.formats.tiff.TiffField;
+import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.samodzielo.exifrenamer.ArgumentParser;
 import pl.samodzielo.exifrenamer.Fixtures;
-import pl.samodzielo.exifrenamer.exception.TagNotFoundException;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,9 +25,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
-
-import static pl.samodzielo.exifrenamer.Fixtures.*;
-import static pl.samodzielo.exifrenamer.Fixtures.WORK_DIR;
 
 class ExifAccessorTest {
 
@@ -35,20 +38,20 @@ class ExifAccessorTest {
     }
 
     @Test
-    void should_return_dateTime_from_exif() throws IOException, ImageReadException, TagNotFoundException {
+    void should_return_dateTime_from_exif() {
         Optional<ZonedDateTime> dateTime = new ExifGovernor(Paths.get(WORK_DIR + SEP + IMAGE_FILE)).getDateTimeFromExif();
         Assertions.assertTrue(dateTime.isPresent());
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, dateTime.get());
     }
 
     @Test
-    void should_return_empty_dateTime_because_exif_data_are_missing() throws IOException, ImageReadException, TagNotFoundException {
+    void should_return_empty_dateTime_because_exif_data_are_missing() {
         Optional<ZonedDateTime> dateTime = new ExifGovernor(Paths.get(WORK_DIR + SEP + FILE_WITHOUT_EXIF)).getDateTimeFromExif();
         Assertions.assertFalse(dateTime.isPresent());
     }
 
     @Test
-    void should_set_dateTime_in_exif() throws IOException, ImageWriteException, ImageReadException, TagNotFoundException {
+    void should_set_dateTime_in_exif() throws IOException {
         File temporary = File.createTempFile("exifrenamer", ".jpg");
         File image = new File(WORK_DIR + SEP + FILE_WITHOUT_EXIF);
 
@@ -61,6 +64,11 @@ class ExifAccessorTest {
         exifAccessor.setDateTimeInExif(DATE_TIME_TO_SET_DATE);
         dateTime = exifAccessor.getDateTimeFromExif();
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, dateTime.get());
+
+        JpegImageMetadata metadata = (JpegImageMetadata) Imaging.getMetadata(temporary);
+        TiffField originalField = metadata.findExifValueWithExactMatch(ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL);
+        Assertions.assertNotNull(originalField);
+        Assertions.assertEquals("2018:07:19 10:06:40", originalField.getStringValue());
 
         temporary.deleteOnExit();
     }

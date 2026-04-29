@@ -46,7 +46,7 @@ class ArgumentParserTest {
         ArgumentParser parser = new ArgumentParser(new String[]{"-w", "-f", FILE, "-t", DATE_TIME_TO_SET_STRING});
         Assertions.assertTrue(parser.isEditExifMode());
         Assertions.assertEquals(Paths.get(WORK_DIR), parser.getWorkingDirectory());
-        Assertions.assertEquals(new File(WORK_DIR + SEP + FILE), parser.getFileToEdit());
+        Assertions.assertEquals(new File(WORK_DIR + SEP + FILE).toPath(), parser.getFileToEdit());
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, parser.getDateTimeToSet());
     }
 
@@ -55,7 +55,7 @@ class ArgumentParserTest {
         ArgumentParser parser = new ArgumentParser(new String[]{"-w", "-f", FILE, "-t", DATE_TIME_TO_SET_STRING, "-d", WORK_DIR_CUSTOM});
         Assertions.assertTrue(parser.isEditExifMode());
         Assertions.assertEquals(Paths.get(WORK_DIR_CUSTOM), parser.getWorkingDirectory());
-        Assertions.assertEquals(new File(WORK_DIR_CUSTOM + SEP + FILE), parser.getFileToEdit());
+        Assertions.assertEquals(new File(WORK_DIR_CUSTOM + SEP + FILE).toPath(), parser.getFileToEdit());
         Assertions.assertEquals(DATE_TIME_TO_SET_DATE, parser.getDateTimeToSet());
     }
 
