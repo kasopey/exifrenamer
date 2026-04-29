@@ -21,6 +21,8 @@ public class ArgumentParser {
 
     private boolean editExifMode;
 
+    private boolean helpMode;
+
     private Path workingDirectory;
 
     private ZonedDateTime dateTimeToSet;
@@ -54,6 +56,7 @@ public class ArgumentParser {
             }
 
             if ("-h".equals(args[i]) || "--help".equals(args[i])) {
+                helpMode = true;
                 printHelp();
             }
 
@@ -89,6 +92,10 @@ public class ArgumentParser {
 
     public boolean isEditExifMode() {
         return editExifMode;
+    }
+
+    public boolean isHelpMode() {
+        return helpMode;
     }
 
     public Path getWorkingDirectory() {

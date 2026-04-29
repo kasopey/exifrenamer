@@ -25,6 +25,9 @@ public class Main {
     // TODO: jesli nazwa pliku jest ok, to go pomijaj
     public static void main(String... args) throws IOException {
         ArgumentParser config = new ArgumentParser(args);
+        if (config.isHelpMode()) {
+            return;
+        }
         ExifFacade facade = new ExifFacade();
         if (config.isEditExifMode()) {
             ExifGovernor exifGovernor = new ExifGovernor(config.getFileToEdit());
