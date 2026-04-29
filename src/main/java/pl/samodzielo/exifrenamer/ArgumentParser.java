@@ -62,7 +62,7 @@ public class ArgumentParser {
 
         }
         if (workingDirectory == null) {
-            workingDirectory = Paths.get(System.getProperty("user.dir"));
+            workingDirectory = Paths.get("").toAbsolutePath();
         }
         fileToEdit = Paths.get(workingDirectory + System.getProperty("file.separator") + fileToEditName);
     }

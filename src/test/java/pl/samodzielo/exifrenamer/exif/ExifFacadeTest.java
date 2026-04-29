@@ -2,7 +2,6 @@ package pl.samodzielo.exifrenamer.exif;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.samodzielo.exifrenamer.Fixtures;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,7 +18,6 @@ class ExifFacadeTest {
 
     @BeforeEach
     void setup() {
-        Fixtures.setWorkingDir();
         when = new ExifFacade();
     }
 

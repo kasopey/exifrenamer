@@ -12,10 +12,8 @@ import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.samodzielo.exifrenamer.ArgumentParser;
-import pl.samodzielo.exifrenamer.Fixtures;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,11 +31,6 @@ class ExifAccessorTest {
     private static final String DATE_TIME_TO_SET_STRING = "2018.07.19_10-06-40";
 
     private static final ZonedDateTime DATE_TIME_TO_SET_DATE = LocalDateTime.parse(DATE_TIME_TO_SET_STRING, DateTimeFormatter.ofPattern(ArgumentParser.DATE_TIME_TO_SET_FORMAT)).atZone(ZoneId.systemDefault());
-
-    @BeforeEach
-    void setup() {
-        Fixtures.setWorkingDir();
-    }
 
     @Test
     void should_return_dateTime_from_exif() {
