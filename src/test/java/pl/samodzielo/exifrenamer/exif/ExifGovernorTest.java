@@ -6,9 +6,11 @@ import static pl.samodzielo.exifrenamer.Fixtures.SEP;
 import static pl.samodzielo.exifrenamer.Fixtures.WORK_DIR;
 
 import org.apache.commons.imaging.Imaging;
+import org.apache.commons.imaging.ImagingException;
 import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata;
 import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants;
+import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,6 +71,54 @@ class ExifAccessorTest {
         TiffField originalField = metadata.findExifValueWithExactMatch(ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL);
         Assertions.assertNotNull(originalField);
         Assertions.assertEquals("2018:07:19 10:06:40", originalField.getStringValue());
+
+        temporary.deleteOnExit();
+    }
+
+    @Test
+    void should_not_overwrite_dateTime_when_already_set() throws IOException {
+        File temporary = File.createTempFile("exifrenamer", ".jpg");
+        File image = new File(WORK_DIR + SEP + IMAGE_FILE);
+        Files.copy(image.toPath(), temporary.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        JpegImageMetadata before = (JpegImageMetadata) Imaging.getMetadata(temporary);
+        TiffField originalValue = before.findExifValueWithExactMatch(TiffTagConstants.TIFF_TAG_DATE_TIME);
+        Assertions.assertNotNull(originalValue);
+
+        ExifGovernor exifAccessor = new ExifGovernor(temporary.toPath());
+        ZonedDateTime newDateTime = DATE_TIME_TO_SET_DATE.plusYears(1);
+
+        ImagingException thrown = Assertions.assertThrows(ImagingException.class,
+                () -> exifAccessor.setDateTime(newDateTime));
+        Assertions.assertEquals("Tag DateTime already set", thrown.getMessage());
+
+        JpegImageMetadata after = (JpegImageMetadata) Imaging.getMetadata(temporary);
+        TiffField unchanged = after.findExifValueWithExactMatch(TiffTagConstants.TIFF_TAG_DATE_TIME);
+        Assertions.assertEquals(originalValue.getStringValue(), unchanged.getStringValue());
+
+        temporary.deleteOnExit();
+    }
+
+    @Test
+    void should_not_overwrite_dateTimeOriginal_when_already_set() throws IOException {
+        File temporary = File.createTempFile("exifrenamer", ".jpg");
+        File image = new File(WORK_DIR + SEP + IMAGE_FILE);
+        Files.copy(image.toPath(), temporary.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        JpegImageMetadata before = (JpegImageMetadata) Imaging.getMetadata(temporary);
+        TiffField originalValue = before.findExifValueWithExactMatch(ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL);
+        Assertions.assertNotNull(originalValue);
+
+        ExifGovernor exifAccessor = new ExifGovernor(temporary.toPath());
+        ZonedDateTime newDateTime = DATE_TIME_TO_SET_DATE.plusYears(1);
+
+        ImagingException thrown = Assertions.assertThrows(ImagingException.class,
+                () -> exifAccessor.setDateTimeOriginal(newDateTime));
+        Assertions.assertEquals("Tag DateTimeOriginal already set", thrown.getMessage());
+
+        JpegImageMetadata after = (JpegImageMetadata) Imaging.getMetadata(temporary);
+        TiffField unchanged = after.findExifValueWithExactMatch(ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL);
+        Assertions.assertEquals(originalValue.getStringValue(), unchanged.getStringValue());
 
         temporary.deleteOnExit();
     }

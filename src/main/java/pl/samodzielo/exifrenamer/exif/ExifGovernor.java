@@ -53,8 +53,21 @@ public class ExifGovernor {
     }
 
     public String setDateTimeInExif(final ZonedDateTime dateTimeToSet) throws IOException {
+        setDateTime(dateTimeToSet);
+        return setDateTimeOriginal(dateTimeToSet);
+    }
+
+    public String setDateTime(final ZonedDateTime dateTimeToSet) throws IOException {
+        return writeSingleTag(TAG_DATE_TIME, false, dateTimeToSet);
+    }
+
+    public String setDateTimeOriginal(final ZonedDateTime dateTimeToSet) throws IOException {
+        return writeSingleTag(TAG_DATE_TIME_ORIGINAL, true, dateTimeToSet);
+    }
+
+    private String writeSingleTag(final TagInfoAscii tag, final boolean inExifSubDirectory, final ZonedDateTime dateTimeToSet) throws IOException {
         File temporary = File.createTempFile("exifrenamer", ".jpg");
-        String newFileName = setDateTimeInExif(file.toFile(), temporary, dateTimeToSet);
+        String newFileName = writeSingleTag(file.toFile(), temporary, tag, inExifSubDirectory, dateTimeToSet);
 
         Path changedImage = temporary.toPath();
         Files.copy(changedImage, file, StandardCopyOption.REPLACE_EXISTING);
@@ -76,62 +89,37 @@ public class ExifGovernor {
         }
     }
 
-    private String setDateTimeInExif(final File sourceImage, final File destinationImage, final ZonedDateTime dateTimeToSet) throws IOException, ImagingException {
+    private String writeSingleTag(final File sourceImage, final File destinationImage, final TagInfoAscii tag, final boolean inExifSubDirectory, final ZonedDateTime dateTimeToSet) throws IOException, ImagingException {
         // code from https://github.com/mjremijan/thoth-jpg/blob/master/src/main/java/org/thoth/imaging/WriteExifMetadataExample.java
         // @author Michael Remijan mjremijan@yahoo.com @mjremijan
         try (OutputStream fos = new FileOutputStream(destinationImage)) {
             TiffOutputSet outputSet = null;
 
-            // note that metadata might be null if no metadata is found.
             final ImageMetadata metadata = Imaging.getMetadata(sourceImage);
             final JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
             if (null != jpegMetadata) {
-                // note that exif might be null if no ExifUtil metadata is found.
+                final TiffField existing = jpegMetadata.findExifValueWithExactMatch(tag);
+                if (existing != null) {
+                    throw new ImagingException(String.format("Tag %s already set", tag.name));
+                }
                 final TiffImageMetadata exif = jpegMetadata.getExif();
-
                 if (null != exif) {
-                    // TiffImageMetadata class is immutable (read-only).
-                    // TiffOutputSet class represents the ExifUtil data to write.
-                    //
-                    // Usually, we want to update existing ExifUtil metadata by changing
-                    // the values of a few fields, or adding a field.
-                    // In these cases, it is easiest to use getOutputSet() to
-                    // start with a "copy" of the fields read from the image.
                     outputSet = exif.getOutputSet();
                 }
             }
 
-            // if file does not contain any exif metadata, we create an empty
-            // set of exif metadata. Otherwise, we keep all of the other existing tags.
             if (null == outputSet) {
                 outputSet = new TiffOutputSet();
             }
 
-            // Example of how to add a field/tag to the output set.
-            //
-            // Note that you should first remove the field/tag if it already
-            // exists in this directory, or you may end up with duplicate tags. See above.
-            //
-            // Certain fields/tags are expected in certain ExifUtil directories;
-            // Others can occur in more than one directory (and often have a
-            // different meaning in different directories).
-            //
-            // TagInfo constants often contain a description of what
-            // directories are associated with a given tag.
-            //
-            // see org.apache.commons.imaging.formats.tiff.constants.AllTagConstants
-            //
-            final TiffOutputDirectory rootDirectory = outputSet.getOrCreateRootDirectory();
-            final TiffOutputDirectory exifDirectory = outputSet.getOrCreateExifDirectory();
-
-            rootDirectory.removeField(TAG_DATE_TIME);
-            exifDirectory.removeField(TAG_DATE_TIME_ORIGINAL);
+            final TiffOutputDirectory directory = inExifSubDirectory
+                    ? outputSet.getOrCreateExifDirectory()
+                    : outputSet.getOrCreateRootDirectory();
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss");
             String formattedString = dateTimeToSet.format(formatter);
 
-            rootDirectory.add(TAG_DATE_TIME, formattedString);
-            exifDirectory.add(TAG_DATE_TIME_ORIGINAL, formattedString);
+            directory.add(tag, formattedString);
 
             BufferedOutputStream bos = new BufferedOutputStream(fos);
 
