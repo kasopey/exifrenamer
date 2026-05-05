@@ -22,7 +22,6 @@ public class Main {
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    // TODO: jesli nazwa pliku jest ok, to go pomijaj
     public static void main(String... args) throws IOException {
         ArgumentParser config = new ArgumentParser(args);
         if (config.isHelpMode()) {
@@ -32,8 +31,10 @@ public class Main {
         if (config.isEditExifMode()) {
             ExifGovernor exifGovernor = new ExifGovernor(config.getFileToEdit());
             exifGovernor.setDateTimeInExif(config.getDateTimeToSet(), config.isForce());
-            String newName = calculateNewName(config.getFileToEdit(), config.getDateTimeToSet());
-            Files.move(config.getFileToEdit(), config.getFileToEdit().resolveSibling(newName), REPLACE_EXISTING);
+            if (!config.isNoRename()) {
+                String newName = calculateNewName(config.getFileToEdit(), config.getDateTimeToSet());
+                Files.move(config.getFileToEdit(), config.getFileToEdit().resolveSibling(newName), REPLACE_EXISTING);
+            }
         } else {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(config.getWorkingDirectory())) {
                 for (Path entry : stream) {

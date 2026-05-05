@@ -25,6 +25,8 @@ public class ArgumentParser {
 
     private boolean force;
 
+    private boolean noRename;
+
     private Path workingDirectory;
 
     private ZonedDateTime dateTimeToSet;
@@ -66,6 +68,10 @@ public class ArgumentParser {
                 force = true;
             }
 
+            if ("-n".equals(args[i]) || "--no-rename".equals(args[i])) {
+                noRename = true;
+            }
+
         }
         if (workingDirectory == null) {
             workingDirectory = Paths.get("").toAbsolutePath();
@@ -94,6 +100,7 @@ public class ArgumentParser {
         sb.append("    -t - dateTime to set in format ").append(DATE_TIME_TO_SET_FORMAT).append(NL);
         sb.append("    -f - file to edit EXIF DATA").append(NL);
         sb.append("    -F, --force - force overwrite of existing EXIF date tags").append(NL);
+        sb.append("    -n, --no-rename - do not rename the file after editing EXIF data").append(NL);
         LOGGER.info(sb.toString());
     }
 
@@ -107,6 +114,10 @@ public class ArgumentParser {
 
     public boolean isForce() {
         return force;
+    }
+
+    public boolean isNoRename() {
+        return noRename;
     }
 
     public Path getWorkingDirectory() {
